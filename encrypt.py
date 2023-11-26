@@ -3,7 +3,7 @@ import itertools
 import json
 import string
 import os
-__all__ = ['TextEncrypter', 'ImageEncrypter']
+__all__ = ['TextEncrypter', 'ImageEncrypter', 'MessageEncrypter']
 
 
 class AbstractEncrypter(object):
@@ -12,6 +12,8 @@ class AbstractEncrypter(object):
     TEXTFMT: str = 'txt'
 
     def __init__(self, filename: str):
+        if filename is None:
+            return
         """
         :param filename: path to the file you need to encrypt/decrypt
         """
@@ -174,3 +176,41 @@ class TextEncrypter(AbstractEncrypter):
 class ImageEncrypter(AbstractEncrypter):
     def __init__(self, filename: str):
         super().__init__(filename)
+
+
+class MessageEncrypter(AbstractEncrypter):
+    def __init__(self, text):
+        super().__init__(None)
+        if not isinstance(text, str):
+            raise ValueError("Invalid text type")
+        self.text = text
+
+    def caesar_encrypt(self, key:int):
+        encr_table = {i: self.MINsymb + (i - self.MINsymb + key) % (self.MAXsymb - self.MINsymb)
+                      for i in range(self.MINsymb, self.MAXsymb)}
+        return self.text.translate(encr_table)
+
+    def caesar_decrypt(self, key: int):
+        return self.caesar_encrypt(-key)
+
+    def vigenere_encrypt(self, key: str):
+        enc_iter = itertools.cycle(map(ord, key))
+        ans = []
+        for symb in self.text:
+            if self.MINsymb <= ord(symb) < self.MAXsymb:
+                ans.append(chr(self.MINsymb + (ord(symb) + next(enc_iter) - self.MINsymb) %
+                                (self.MAXsymb - self.MINsymb)))
+            else:
+                ans.append(symb)
+        return ''.join(ans)
+
+    def vigenere_decrypt(self, key: str):
+        enc_iter = itertools.cycle(map(ord, key))
+        ans = []
+        for symb in self.text:
+            if self.MINsymb <= ord(symb) < self.MAXsymb:
+                ans.append(chr(self.MINsymb + (ord(symb) - next(enc_iter) - self.MINsymb) %
+                                (self.MAXsymb - self.MINsymb)))
+            else:
+                ans.append(symb)
+        return ''.join(ans)
